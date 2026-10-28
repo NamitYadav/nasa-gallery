@@ -4,14 +4,23 @@ Browse NASA's Image and Video Library: search, filter by media type and year, sc
 
 **Live:** https://namityadav.github.io/nasa-gallery/
 
+![The gallery searching for Saturn: a four-column grid of NASA images under a search bar](docs/screenshot.jpg)
+
 ## How it's built
 
-- React 19 and TypeScript, built with Vite. Plain CSS and native form controls, no UI kit.
-- **Windowed grid.** Only the rows on screen exist in the DOM (`@tanstack/react-virtual`), so a long infinite-scroll session stays fast. The column count follows the viewport width.
-- **Paged feed with no races** (`useGallery` in `src/nasa.ts`). A filter change aborts the request in flight and starts again from page 1. Later pages append, items an earlier page already returned are skipped, and the feed stops when the API stops returning a next page. Errors show a Retry button instead of a stuck spinner.
-- **Light grid.** Cards load NASA's small preview images lazily. The viewer then reads the item's asset list and picks a web-sized rendition (a mobile-sized MP4 or a large JPEG) instead of the original, which can run to hundreds of megabytes.
-- **Linkable viewer.** The open item lives in the URL hash (`#/item/<id>`) and shows in a native `<dialog>`, so Back closes it, Esc works, and the gallery keeps its scroll position.
-- The tests cover the feed logic and the asset handling: paging, de-duplication, restarting on a filter change mid-fetch, error recovery, and building https URLs from NASA's `http://` paths, which contain spaces.
+- React 19 and TypeScript, built with Vite. Plain CSS and native form controls, no UI kit. Gruvbox colours, dark or light following the OS.
+- **Windowed grid.** Only the rows on screen exist in the DOM (`@tanstack/react-virtual`). Column count, card width and the list's offset are measured with a `ResizeObserver`, not guessed from the window. A resize that changes the column count keeps your place.
+- **Paged feed with no races** (`useGallery` in `src/nasa.ts`):
+  - A filter change resets the results during render and aborts the request in flight, so stale results never paint.
+  - Later pages append and skip repeats. A page that adds nothing new can't stall the feed.
+  - The feed stops cleanly at the API's 10,000-result ceiling instead of asking for a page the API refuses.
+  - Errors show the API's own reason and a Retry button.
+- **Light grid.** Cards load NASA's preview renditions lazily, with a `srcset` so dense screens get the sharper one. The viewer then reads the item's asset list and picks a web-sized file (a larger MP4 on wide screens, the mobile one on phones) instead of the original, which can run to hundreds of megabytes.
+- **Shareable state.** Filters live in the query string (`?q=mars&media=video&since=2010`) and the open item in the hash (`#/item/<id>`). Bad or malformed links fall back gracefully.
+- **Keyboard and screen readers.** The viewer is a native `<dialog>`, so Esc and Back both close it. However it closes, focus returns to the card that opened it. Focused cards scroll clear of the sticky header, and the result count is announced. Motion respects `prefers-reduced-motion`.
+- **Checks.** ESLint (`react-hooks`, `jsx-a11y`), TypeScript strict mode and Vitest run on every push before the GitHub Pages deploy. Tests cover the feed logic and the viewer's behaviour: focus return, a link to a missing item followed by a good one, malformed links, and filters round-tripping through the URL.
+
+Known gap: NASA serves its caption files without CORS headers, and mostly as `.srt`, which browsers can't play, so videos play without captions.
 
 Data: [NASA Image and Video Library API](https://images.nasa.gov/). No key needed.
 
@@ -20,6 +29,7 @@ Data: [NASA Image and Video Library API](https://images.nasa.gov/). No key neede
 ```bash
 npm install
 npm run dev
+npm run lint
 npm test
 ```
 
