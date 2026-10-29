@@ -179,7 +179,15 @@ export function Gallery() {
             >
               {posts.slice(row.index * columns, (row.index + 1) * columns).map((post) => (
                 <button key={post.id} type="button" className="card" data-id={post.id} onClick={() => open(post.id)}>
-                  <img src={post.thumbnail} srcSet={post.srcSet || undefined} sizes={`${cardWidth}px`} alt="" loading="lazy" />
+                  {/* The first row is the likely LCP element, so it isn't lazy. */}
+                  <img
+                    src={post.thumbnail}
+                    srcSet={post.srcSet || undefined}
+                    sizes={`${cardWidth}px`}
+                    alt=""
+                    loading={row.index === 0 ? 'eager' : 'lazy'}
+                    fetchPriority={row.index === 0 ? 'high' : 'auto'}
+                  />
                   {post.video && <span className="badge" aria-hidden="true">▶</span>}
                   <span className="title">
                     {post.title || 'Untitled'}
